@@ -219,6 +219,72 @@ public:
     }
   }
 
+  void substitute_node_no_restrash( node const& old_node, signal const& new_signal )
+  {
+    if ( Ntk::is_dead( Ntk::get_node( new_signal ) ) )
+    {
+      Ntk::revive_node( Ntk::get_node( new_signal ) );
+    }
+
+    const auto parents = _fanout[old_node];
+    for ( auto n : parents )
+    {
+      assert( !Ntk::is_ci( n ) && !Ntk::is_dead( n ) );
+
+      /* replace_in_node(n, old_node, new_signal) but without restrashing or constant propagation  */
+      auto& nobj = this->_storage->nodes[n];
+      uint32_t fanin = 0u;
+      signal _new = new_signal;
+      if ( nobj.children[0].index == old_node )
+      {
+        fanin = 0u;
+        _new.complement ^= nobj.children[0].weight;
+      }
+      else if ( nobj.children[1].index == old_node )
+      {
+        fanin = 1u;
+        _new.complement ^= nobj.children[1].weight;
+      }
+      else
+      {
+        continue; /* not a fanout of old_node */
+      }
+
+      const auto old_child0 = signal{ nobj.children[0] };
+      const auto old_child1 = signal{ nobj.children[1] };
+
+      signal child1 = _new;
+      signal child0 = nobj.children[fanin ^ 1];
+      if ( child0.index > child1.index )
+      {
+        std::swap( child0, child1 );
+      }
+
+      this->_storage->hash.erase( nobj );
+      nobj.children[0] = child0;
+      nobj.children[1] = child1;
+      if ( this->_storage->hash.find( nobj ) == this->_storage->hash.end() )
+      {
+        this->_storage->hash[nobj] = n;
+      }
+      this->_storage->nodes[new_signal.index].data[0].h1++;
+
+      for ( auto const& fn : this->_events->on_modified )
+      {
+        ( *fn )( n, { old_child0, old_child1 } );
+      }
+    }
+
+    /* check outputs */
+    Ntk::replace_in_outputs( old_node, new_signal );
+
+    /* recursively reset old node */
+    if ( old_node != new_signal.index )
+    {
+      Ntk::take_out_node( old_node );
+    }
+  }
+
 private:
   void register_events()
   {
