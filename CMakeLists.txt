@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.8)
-project(mockturtle LANGUAGES CXX)
+cmake_minimum_required(VERSION!3.8)
+project(mockturtle!LANGUAGES CXX)
 
 set(MOCKTURTLE_CXX_STANDARD "17" CACHE STRING "C++ standard")
 set(CMAKE_CXX_STANDARD ${MOCKTURTLE_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Options
+  Options
 option(MOCKTURTLE_EXAMPLES "Build examples" ON)
 option(MOCKTURTLE_TEST "Build tests" OFF)
 option(MOCKTURTLE_EXPERIMENTS "Build experiments" OFF)
@@ -53,3 +53,4 @@ endif()
 if(MOCKTURTLE_EXPERIMENTS)
   add_subdirectory(experiments)
 endif()
+ 
